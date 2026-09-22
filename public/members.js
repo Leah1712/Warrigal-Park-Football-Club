@@ -5,18 +5,31 @@ async function createMember(name, date_of_birth, confirmDuplicate = false) {
     try {
         const response = await fetch('/api/members', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, date_of_birth, confirmDuplicate })
+            headers: { 
+                'Content-Type': 'application/json' 
+            },
+            body: JSON.stringify({ 
+                name: name, 
+                date_of_birth: date_of_birth, 
+                confirmDuplicate: confirmDuplicate 
+            })
         });
 
-        const data = await response.json();
+        // Parse JSON safely
+        let data = {};
+        try {
+            data = await response.json();
+        } catch (err) {
+            console.error('Failed to parse JSON response:', err);
+            data = { message: 'Unexpected response format from server.' };
+        }
 
-        // If duplicate detected, prompt registrar to confirm or cancel
+        // Handle 409 Conflict (Duplicate Member)
         if (response.status === 409 && data.isDuplicate) {
-            const userConfirmed = confirm(`${data.message}\n\nDo you want to create this member anyway?`);
+            const userConfirmed = confirm(data.message + '\n\nDo you want to create this member anyway?');
 
             if (userConfirmed) {
-                // Retry with confirmation flag set to true
+                // Retry with confirmation flag
                 return await createMember(name, date_of_birth, true);
             } else {
                 message.textContent = 'Member creation cancelled.';
@@ -24,25 +37,33 @@ async function createMember(name, date_of_birth, confirmDuplicate = false) {
             }
         }
 
+        // Handle success/failure responses
         if (response.ok) {
-            message.textContent = 'Member created successfully.';
+            message.textContent = data.message || 'Member created successfully.';
             memberForm.reset();
         } else {
-            message.textContent = data.message;
+            message.textContent = data.message || 'Failed to create member.';
         }
 
     } catch (error) {
-        console.error(error);
+        console.error('Fetch error:', error);
         message.textContent = 'Unable to connect to the server.';
     }
 }
 
 memberForm.addEventListener('submit', function(event) {
     event.preventDefault();
-    const name = document.getElementById('name').value;
-    const date_of_birth = document.getElementById('date_of_birth').value;
+
+    const nameInput = document.getElementById('name');
+    const dobInput = document.getElementById('date_of_birth');
+
+    const name = nameInput ? nameInput.value.trim() : '';
+    const date_of_birth = dobInput ? dobInput.value : '';
+
+    if (!name || !date_of_birth) {
+        message.textContent = 'Please fill in all required fields.';
+        return;
+    }
 
     createMember(name, date_of_birth);
 });
-
-
