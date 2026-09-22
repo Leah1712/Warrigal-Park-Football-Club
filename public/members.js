@@ -67,8 +67,6 @@ memberForm.addEventListener('submit', function(event) {
 
     createMember(name, date_of_birth);
 });
-
-
 async function fetchPersistentMembers() {
     try {
         const response = await fetch('/api/members');
