@@ -1,92 +1,28 @@
-const memberForm = document.getElementById('memberForm');
-const message = document.getElementById('message');
+async function updateMemberDetails(memberId) {
+    const newName = prompt('Enter updated member name:');
+    const newDob = prompt('Enter updated date of birth (YYYY-MM-DD):');
 
-async function createMember(name, date_of_birth, confirmDuplicate = false) {
-    try {
-        const response = await fetch('/api/members', {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json' 
-            },
-            body: JSON.stringify({ 
-                name: name, 
-                date_of_birth: date_of_birth, 
-                confirmDuplicate: confirmDuplicate 
-            })
-        });
+    if (!newName || !newDob) return;
 
-        // Parse JSON safely
-        let data = {};
-        try {
-            data = await response.json();
-        } catch (err) {
-            console.error('Failed to parse JSON response:', err);
-            data = { message: 'Unexpected response format from server.' };
-        }
+    const response = await fetch(`/api/members/${memberId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newName, date_of_birth: newDob })
+    });
 
-        // Handle 409 Conflict (Duplicate Member)
-        if (response.status === 409 && data.isDuplicate) {
-            const userConfirmed = confirm(data.message + '\n\nDo you want to create this member anyway?');
-
-            if (userConfirmed) {
-                // Retry with confirmation flag
-                return await createMember(name, date_of_birth, true);
-            } else {
-                message.textContent = 'Member creation cancelled.';
-                return;
-            }
-        }
-
-        // Handle success/failure responses
-        if (response.ok) {
-            message.textContent = data.message || 'Member created successfully.';
-            memberForm.reset();
-        } else {
-            message.textContent = data.message || 'Failed to create member.';
-        }
-
-    } catch (error) {
-        console.error('Fetch error:', error);
-        message.textContent = 'Unable to connect to the server.';
-    }
+    const result = await response.json();
+    alert(result.message);
 }
 
-memberForm.addEventListener('submit', function(event) {
-    event.preventDefault();
+// Function to deactivate member without deleting the record
+async function deactivateMember(memberId) {
+    const confirmDeactivate = confirm('Are you sure you want to mark this member as inactive?');
+    if (!confirmDeactivate) return;
 
-    const nameInput = document.getElementById('name');
-    const dobInput = document.getElementById('date_of_birth');
+    const response = await fetch(`/api/members/${memberId}/deactivate`, {
+        method: 'PATCH'
+    });
 
-    const name = nameInput ? nameInput.value.trim() : '';
-    const date_of_birth = dobInput ? dobInput.value : '';
-
-    if (!name || !date_of_birth) {
-        message.textContent = 'Please fill in all required fields.';
-        return;
-    }
-
-    createMember(name, date_of_birth);
-});
-
-
-async function fetchPersistentMembers() {
-    try {
-        const response = await fetch('/api/members');
-        const members = await response.json();
-
-        const listContainer = document.getElementById('memberList');
-        listContainer.innerHTML = '';
-
-        members.forEach(member => {
-            const item = document.createElement('li');
-            item.textContent = `ID: ${member.id} | Name: ${member.name} | DOB: ${member.date_of_birth}`;
-            listContainer.appendChild(item);
-        });
-    } catch (error) {
-        console.error('Failed to load members from database:', error);
-    }
+    const result = await response.json();
+    alert(result.message);
 }
-
-// Automatically fetch records when page loads
-window.addEventListener('DOMContentLoaded', fetchPersistentMembers);
-
