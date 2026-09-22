@@ -67,3 +67,26 @@ memberForm.addEventListener('submit', function(event) {
 
     createMember(name, date_of_birth);
 });
+
+
+async function fetchPersistentMembers() {
+    try {
+        const response = await fetch('/api/members');
+        const members = await response.json();
+
+        const listContainer = document.getElementById('memberList');
+        listContainer.innerHTML = '';
+
+        members.forEach(member => {
+            const item = document.createElement('li');
+            item.textContent = `ID: ${member.id} | Name: ${member.name} | DOB: ${member.date_of_birth}`;
+            listContainer.appendChild(item);
+        });
+    } catch (error) {
+        console.error('Failed to load members from database:', error);
+    }
+}
+
+// Automatically fetch records when page loads
+window.addEventListener('DOMContentLoaded', fetchPersistentMembers);
+
