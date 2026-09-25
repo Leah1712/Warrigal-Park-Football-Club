@@ -1,70 +1,50 @@
 
 
 const memberForm = document.getElementById('memberForm');
-
 const message = document.getElementById('message');
 
-
-memberForm.addEventListener('submit', async function(event) {
-
-    // Stop the page from refreshing
-    event.preventDefault();
-
-
-    // Get the information entered by the registrar
-    const name = document.getElementById('name').value;
-
-    const date_of_birth =
-        document.getElementById('date_of_birth').value;
-
-
+async function createMember(name, date_of_birth, confirmDuplicate = false) {
     try {
-
-        // Send the member information to the server
         const response = await fetch('/api/members', {
-
             method: 'POST',
-
-            headers: {
-                'Content-Type': 'application/json'
-            },
-
-            body: JSON.stringify({
-                name: name,
-                date_of_birth: date_of_birth
-            })
-
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, date_of_birth, confirmDuplicate })
         });
 
-
-        // Get the response from the server
         const data = await response.json();
 
+        // If duplicate detected, prompt registrar to confirm or cancel
+        if (response.status === 409 && data.isDuplicate) {
+            const userConfirmed = confirm(`${data.message}\n\nDo you want to create this member anyway?`);
 
-        // If the member was successfully created
+            if (userConfirmed) {
+                // Retry with confirmation flag set to true
+                return await createMember(name, date_of_birth, true);
+            } else {
+                message.textContent = 'Member creation cancelled.';
+                return;
+            }
+        }
+
         if (response.ok) {
-
-            message.textContent =
-                'Member created successfully.';
-
-            // Clear the form
+            message.textContent = 'Member created successfully.';
             memberForm.reset();
-
         } else {
-
-            // Display the error message
-            message.textContent =
-                data.message;
-
+            message.textContent = data.message;
         }
 
     } catch (error) {
-
         console.error(error);
-
-        message.textContent =
-            'Unable to connect to the server.';
-
+        message.textContent = 'Unable to connect to the server.';
     }
+}
 
+memberForm.addEventListener('submit', function(event) {
+    event.preventDefault();
+    const name = document.getElementById('name').value;
+    const date_of_birth = document.getElementById('date_of_birth').value;
+
+    createMember(name, date_of_birth);
 });
+
+
