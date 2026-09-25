@@ -1,70 +1,40 @@
-
 const express = require('express');
-
 const router = express.Router();
-
 const db = require('../db');
 
+// Scenario 2: Check for existing duplicate before creating
 
-// Create a new member
 router.post('/', (req, res) => {
+    const { name, date_of_birth, confirmDuplicate } = req.body;
 
-    // Get the information sent from the form
-    const {
-        name,
-        date_of_birth
-    } = req.body;
-
-
-    // Check that required information was entered
     if (!name || !date_of_birth) {
-
-        return res.status(400).json({
-            message: 'Name and date of birth are required.'
-        });
-
+        return res.status(400).json({ message: 'Name and Date of Birth are required.' });
     }
 
+    // Step 1: Check if a record with the same name and DOB already exists
+    const checkSql = 'SELECT * FROM members WHERE name = ? AND date_of_birth = ?';
+    db.query(checkSql, [name, date_of_birth], (err, results) => {
+        if (err) return res.status(500).json({ message: 'Database error.' });
 
-    // SQL query to insert the new member
-    const sql = `
-        INSERT INTO members
-        (name, date_of_birth, status)
-        VALUES (?, ?, 'Active')
-    `;
-
-
-    // Run the SQL query
-    db.query(
-        sql,
-        [name, date_of_birth],
-        (err, result) => {
-
-            // If there is a database error
-            if (err) {
-
-                console.error(err);
-
-                return res.status(500).json({
-                    message: 'Failed to create member.'
-                });
-
-            }
-
-
-            // Send successful response
-            res.status(201).json({
-
-                message: 'Member created successfully.',
-
-                member_id: result.insertId
-
+        // Step 2: Flag duplicate if found and registrar hasn't confirmed yet
+        if (results.length > 0 && !confirmDuplicate) {
+            return res.status(409).json({
+                isDuplicate: true,
+                message: 'A member with the same name and date of birth already exists.'
             });
-
         }
-    );
 
+        // Step 3: Proceed with creation if no duplicate or if confirmed
+        const insertSql = 'INSERT INTO members (name, date_of_birth) VALUES (?, ?)';
+        db.query(insertSql, [name, date_of_birth], (err, result) => {
+            if (err) return res.status(500).json({ message: 'Database error while saving.' });
+            return res.status(201).json({
+                message: 'Member created successfully.',
+                memberId: result.insertId
+            });
+        });
+    });
 });
 
-
 module.exports = router;
+
