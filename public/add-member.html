@@ -1,0 +1,66 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Add Member</title>
+
+    <link rel="stylesheet" href="members.css">
+</head>
+
+<body>
+
+    <div class="container">
+
+        <h1>Add Member</h1>
+
+        <p>Enter the member's information below.</p>
+
+        <form id="memberForm">
+
+            <div class="form-group">
+
+                <label for="name">Member Name</label>
+
+                <input
+                    type="text"
+                    id="name"
+                    name="name"
+                    placeholder="Enter member name"
+                    required
+                >
+
+            </div>
+
+            <div class="form-group">
+
+                <label for="date_of_birth">Date of Birth</label>
+
+                <input
+                    type="date"
+                    id="date_of_birth"
+                    name="date_of_birth"
+                    required
+                >
+
+            </div>
+
+            <button type="submit">
+                Save Member
+            </button>
+
+        </form>
+
+        <div id="message"></div>
+
+    </div>
+
+    <script src="members.js"></script>
+
+</body>
+
+</html>
